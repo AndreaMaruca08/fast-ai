@@ -16,7 +16,7 @@ var streamer = &Streamer{}
 func ChatPage(page *Page, model core.Model) *Page {
 	ClearTerminal()
 
-	page = NewPage("Chat", "Modello attuale: "+model.Name, true)
+	page = NewPage("                    \n,---.|         |    \n|    |---.,---.|--- \n|    |   |,---||    \n`---'`   '`---^`---'\n                    ", "Modello attuale: "+model.Name, true)
 	currentPage = page
 	chat = &core.Chat{Model: model}
 	page.Update()

@@ -93,6 +93,8 @@ func handleShortcuts() {
 			currentPage = ChatPage(currentPage, core.CodingHighModel())
 		case char == '5':
 			currentPage = UsagePage(currentPage)
+		case char == '6':
+			currentPage = CreditPage(currentPage)
 		case key == keyboard.KeyEsc:
 			fmt.Println("Adios")
 			return
