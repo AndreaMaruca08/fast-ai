@@ -16,7 +16,18 @@ var streamer = &Streamer{}
 func ChatPage(page *Page, model core.Model) *Page {
 	ClearTerminal()
 
-	page = NewPage("                    \n,---.|         |    \n|    |---.,---.|--- \n|    |   |,---||    \n`---'`   '`---^`---'\n                    ", "Modello attuale: "+model.Name, true)
+	page = NewPage(core.WrapIn(
+		"  ░██████  ░██                      ░██    \n"+
+			" ░██   ░██ ░██                      ░██    \n"+
+			"░██        ░████████   ░██████   ░████████ \n"+
+			"░██        ░██    ░██       ░██     ░██    \n"+
+			"░██        ░██    ░██  ░███████     ░██    \n"+
+			" ░██   ░██ ░██    ░██ ░██   ░██     ░██    \n"+
+			"  ░██████  ░██    ░██  ░█████░██     ░████ \n"+
+			"                                           \n", core.Green),
+		"Modello attuale: "+core.WrapIn(model.Name, core.Red)+" | "+core.WrapIn(model.Type, core.Blue),
+		true,
+	)
 	currentPage = page
 	chat = &core.Chat{Model: model}
 	page.Update()
@@ -56,8 +67,13 @@ func send(page *Page, message string) {
 	page.AddMessage(message, true)
 	page.Update()
 
-	resp := chat.Send(streamer)
+	resp, err := chat.Send(streamer)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	page.AddMessage(resp, false)
+	page.AddMessage("\n--------------------------", false)
 	page.Update()
 }
 
@@ -79,9 +95,12 @@ func getSingleInput(prompt string) (string, error) {
 		return "", scanner.Err()
 	}
 
-	if scanner.Text() == "" {
+	if scanner.Text() == "" || scanner.Text() == "home" || scanner.Text() == "exit" {
 		HomePage()
-		keyboard.Open()
+		err := keyboard.Open()
+		if err != nil {
+			return "", err
+		}
 		return "", nil
 	}
 

@@ -59,6 +59,30 @@ func moveCursor(builder *strings.Builder, x, y int) {
 	}
 }
 
+func HomePage() *Page {
+	ClearTerminal()
+	page := NewPage(core.WrapIn(
+		"                    \n"+
+			"|   |               \n"+
+			"|---|,---.,-.-.,---.\n"+
+			"|   ||   || | ||---'\n"+
+			"`   '`---'` ' '`---'\n"+
+			"                    ", core.Green),
+		"Questo è un client gratuito per interagire con AI senza consumi di ram e cpu alti\n"+
+			"Nessun lag dovuti all'app\n"+
+			"ESC per uscire\n"+
+			"1 - Home\n"+
+			"2 - Chat\n"+
+			"3 - Chat coding LOW\n"+
+			"4 - Chat coding HIGH\n"+
+			"5 - Usage and info\n"+
+			"6 - Ai Config\n"+
+			"7 - Credits", false)
+	page.Update()
+
+	return page
+}
+
 func Run() {
 	currentPage = HomePage()
 	handleShortcuts()
@@ -82,6 +106,8 @@ func handleShortcuts() {
 		}
 		switch {
 		case key == keyboard.KeyCtrlZ:
+		case char == 'r':
+			currentPage.Update()
 
 		case char == '1':
 			currentPage = HomePage()
@@ -94,9 +120,11 @@ func handleShortcuts() {
 		case char == '5':
 			currentPage = UsagePage(currentPage)
 		case char == '6':
+			currentPage = ConfigPage(currentPage)
+		case char == '7':
 			currentPage = CreditPage(currentPage)
 		case key == keyboard.KeyEsc:
-			fmt.Println("Adios")
+			fmt.Println("Addio")
 			return
 		}
 

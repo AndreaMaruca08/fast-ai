@@ -7,9 +7,9 @@ import (
 
 const (
 	pageWidth    = 200
-	messageWidth = 100
+	messageWidth = 120
 	messageLeftX = 2
-	messageTopY  = 4
+	messageTopY  = 15
 )
 
 type Page struct {
@@ -58,7 +58,7 @@ func (p *Page) Update() {
 	ClearTerminal()
 	fmt.Println(
 		p.Title +
-			"\n_________________________________________\n" +
+			"\n____________________________________________________________________\n" +
 			p.Body.String(),
 	)
 }

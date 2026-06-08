@@ -37,26 +37,30 @@ func UsagePage(page *Page) *Page {
 	data := response.Data
 	builder := strings.Builder{}
 
-	builder.WriteString(fmt.Sprintf("BYOKUsage: %.4f\n", data.BYOKUsage))
-	builder.WriteString(fmt.Sprintf("BYOKUsageDaily: %.4f\n", data.BYOKUsageDaily))
-	builder.WriteString(fmt.Sprintf("BYOKUsageMonthly: %.f\n", data.BYOKUsageMonthly))
-	builder.WriteString(fmt.Sprintf("BYOKUsageWeekly: %.4f\n", data.BYOKUsageWeekly))
-	builder.WriteString(fmt.Sprintf("CreatorUserID: %s\n", data.CreatorUserID))
-	builder.WriteString(fmt.Sprintf("IncludeBYOKInLimit: %t\n", data.IncludeBYOKInLimit))
-	builder.WriteString(fmt.Sprintf("IsFreeTier: %t\n", data.IsFreeTier))
-	builder.WriteString(fmt.Sprintf("IsManagementKey: %t\n", data.IsManagementKey))
-	builder.WriteString(fmt.Sprintf("Label: %s\n", data.Label))
-	builder.WriteString(fmt.Sprintf("Limit: %.4f\n", data.Limit))
-	builder.WriteString(fmt.Sprintf("LimitRemaining: %.4f\n", data.LimitRemaining))
-	builder.WriteString(fmt.Sprintf("LimitReset: %s\n", data.LimitReset))
-	builder.WriteString(fmt.Sprintf("Usage: %.4f\n", data.Usage))
-	builder.WriteString(fmt.Sprintf("UsageDaily: %.4f\n", data.UsageDaily))
-	builder.WriteString(fmt.Sprintf("UsageMonthly: %.4f\n", data.UsageMonthly))
-	builder.WriteString(fmt.Sprintf("UsageWeekly: %.4f\n", data.UsageWeekly))
-	builder.WriteString(fmt.Sprintf("IsProvisioningKey: %t\n", data.IsProvisioningKey))
-	builder.WriteString(fmt.Sprintf("ExpiresAt: %s\n", data.ExpiresAt.Format(time.RFC3339)))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("BYOKUsage:", core.Blue)+" %.7f\n", data.BYOKUsage))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("BYOKUsageDaily:", core.Blue)+" %.7f\n", data.BYOKUsageDaily))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("BYOKUsageMonthly:", core.Blue)+" %.7f\n", data.BYOKUsageMonthly))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("BYOKUsageWeekly:", core.Blue)+" %.7f\n", data.BYOKUsageWeekly))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("CreatorUserID:", core.Blue)+" %s\n", data.CreatorUserID))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("IncludeBYOKInLimit:", core.Blue)+" %t\n", data.IncludeBYOKInLimit))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("IsFreeTier:", core.Blue)+" %t\n", data.IsFreeTier))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("IsManagementKey:", core.Blue)+" %t\n", data.IsManagementKey))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("Label:", core.Blue)+" %s\n", data.Label))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("Limit:", core.Blue)+" %.7f\n", data.Limit))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("LimitRemaining:", core.Blue)+" %.7f\n", data.LimitRemaining))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("LimitReset:", core.Blue)+" %s\n", data.LimitReset))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("Usage:", core.Blue)+" %.7f\n", data.Usage))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("UsageDaily:", core.Blue)+" %.7f\n", data.UsageDaily))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("UsageMonthly:", core.Blue)+" %.7f\n", data.UsageMonthly))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("UsageWeekly:", core.Blue)+" %.7f\n", data.UsageWeekly))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("IsProvisioningKey:", core.Blue)+" %t\n", data.IsProvisioningKey))
+	builder.WriteString(fmt.Sprintf(core.WrapIn("ExpiresAt:", core.Blue)+" %s\n", data.ExpiresAt.Format(time.RFC3339)))
 
-	page = NewPage("Usage", builder.String(), false)
+	page = NewPage(core.WrapIn(
+		"▗▖ ▗▖ ▗▄▄▖ ▗▄▖  ▗▄▄▖▗▄▄▄▖\n"+
+			"▐▌ ▐▌▐▌   ▐▌ ▐▌▐▌   ▐▌   \n"+
+			"▐▌ ▐▌ ▝▀▚▖▐▛▀▜▌▐▌▝▜▌▐▛▀▀▘\n"+
+			"▝▚▄▞▘▗▄▄▞▘▐▌ ▐▌▝▚▄▞▘▐▙▄▄▖\n", core.Blue), builder.String(), false)
 	page.Update()
 
 	return page

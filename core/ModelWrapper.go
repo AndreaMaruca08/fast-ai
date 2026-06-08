@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 
@@ -18,8 +19,8 @@ type Streamer interface {
 }
 
 type Model struct {
-	Name        string
-	Temperature float64
+	Name string
+	Type string
 }
 type Message struct {
 	Role    string
@@ -30,6 +31,12 @@ type Chat struct {
 	History []components.ChatMessages
 }
 
+const (
+	Normal   string = "openrouter/free"
+	CodeLow  string = "openai/gpt-oss-20b:free"
+	CodeHigh string = "openai/gpt-oss-120b:free"
+)
+
 func (chat *Chat) CreateUserMessage(msg string) {
 	message := components.CreateChatMessagesUser(
 		components.ChatUserMessage{
@@ -39,46 +46,79 @@ func (chat *Chat) CreateUserMessage(msg string) {
 	)
 	chat.History = append(chat.History, message)
 }
-func (chat *Chat) CreateChatMessage(msg string) {
+func (chat *Chat) SetSystemPrompt(prompt string) {
 	message := components.CreateChatMessagesSystem(
 		components.ChatSystemMessage{
 			Role:    components.ChatSystemMessageRoleSystem,
-			Content: components.CreateChatSystemMessageContentStr(msg),
+			Content: components.CreateChatSystemMessageContentStr(prompt),
 		},
 	)
-	chat.History = append(chat.History, message)
 
+	chat.History = append([]components.ChatMessages{message}, chat.History...)
 }
-func (chat *Chat) Send(streamer Streamer) string {
-	_ = godotenv.Load()
-
-	key := os.Getenv("KEY")
-	if key == "" {
-		log.Fatal("KEY di openrouter mancante nel .env")
-	}
-
-	ctx := context.Background()
-
-	client := openrouter.New(
-		openrouter.WithSecurity(key),
+func (chat *Chat) CreateAssistantMessage(msg string) {
+	message := components.CreateChatMessagesAssistant(
+		components.ChatAssistantMessage{
+			Role: components.ChatAssistantMessageRoleAssistant,
+			Content: optionalnullable.From(
+				openrouter.Pointer(
+					components.CreateChatAssistantMessageContentStr(msg),
+				),
+			),
+		},
 	)
+
+	chat.History = append(chat.History, message)
+}
+
+var client *openrouter.OpenRouter
+var ctx context.Context
+var configs ConfigFile
+
+func (chat *Chat) Send(streamer Streamer) (string, error) {
+	if client == nil {
+		_ = godotenv.Load()
+
+		key := os.Getenv("KEY")
+		if key == "" {
+			return "", errors.New("KEY di openrouter mancante nel .env")
+		}
+		ctx = context.Background()
+		client = openrouter.New(
+			openrouter.WithSecurity(key),
+		)
+
+		configs = GetConfigFileContent()
+	}
 
 	model := chat.Model
 
+	var config Config
+	switch model.Name {
+	case Normal:
+		config = configs.Normal
+	case CodeLow:
+		config = configs.CodeLow
+	case CodeHigh:
+		config = configs.CodeHigh
+	}
+
+	chat.SetSystemPrompt(config.PrePrompt)
+
 	res, err := client.Chat.Send(ctx, components.ChatRequest{
-		Model:       new(model.Name),
-		Stream:      new(true),
-		MaxTokens:   optionalnullable.From(new(int64(150))),
-		Temperature: optionalnullable.From(new(model.Temperature)),
+		Model:       openrouter.Pointer(model.Name),
+		Stream:      openrouter.Pointer(true),
+		MaxTokens:   optionalnullable.From(openrouter.Pointer[int64](int64(config.MaxTokens))),
+		Temperature: optionalnullable.From(openrouter.Pointer(config.Temperature)),
 		Messages:    chat.History,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return "", errors.New("Errore durante la chiamata a OpenRouter: " + err.Error())
 	}
-
 	if res.EventStream == nil {
 		log.Fatalf("mi aspettavo uno stream, ricevuto: %v", res.Type)
 	}
+
 	defer func(EventStream *stream.EventStream[operations.SendChatCompletionRequestResponseBody]) {
 		err := EventStream.Close()
 		if err != nil {
@@ -87,21 +127,18 @@ func (chat *Chat) Send(streamer Streamer) string {
 	}(res.EventStream)
 
 	resp := streamer.Stream(res)
-	chat.CreateChatMessage(resp)
-	return resp
+	chat.CreateAssistantMessage(resp)
+	return resp, nil
 }
 
 func DefaultModel() Model {
-	return Model{Name: "openrouter/free", Temperature: 0.5}
-}
-func Gpt4o() Model {
-	return Model{Name: "", Temperature: 0.5}
+	return Model{Name: Normal, Type: "General purpose"}
 }
 
 func CodingLowModel() Model {
-	return Model{Name: "openai/gpt-oss-20b:free", Temperature: 0.0}
+	return Model{Name: CodeLow, Type: "Coding low"}
 }
 
 func CodingHighModel() Model {
-	return Model{Name: "openai/gpt-oss-120b:free", Temperature: 0.0}
+	return Model{Name: CodeHigh, Type: "Coding high"}
 }
