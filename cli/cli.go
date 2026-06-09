@@ -20,7 +20,7 @@ type Streamer struct{}
 
 func (cs *Streamer) Stream(res *operations.SendChatCompletionRequestResponse) string {
 	var full strings.Builder
-	var formatter Formatter
+	var formatter core.Formatter
 
 	for res.EventStream.Next() {
 		event := res.EventStream.Value()
@@ -73,11 +73,9 @@ func HomePage() *Page {
 			"ESC per uscire\n"+
 			"1 - Home\n"+
 			"2 - Chat\n"+
-			"3 - Chat coding LOW\n"+
-			"4 - Chat coding HIGH\n"+
-			"5 - Usage and info\n"+
-			"6 - Ai Config\n"+
-			"7 - Credits", false)
+			"3 - Usage and info\n"+
+			"4 - Ai Config\n"+
+			"5 - Credits", false)
 	page.Update()
 
 	return page
@@ -104,6 +102,14 @@ func handleShortcuts() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		if currentPage != nil && currentPage.IsChat {
+			if handleChatKey(char, key) {
+				return
+			}
+			continue
+		}
+
 		switch {
 		case key == keyboard.KeyCtrlZ:
 		case char == 'r':
@@ -112,25 +118,18 @@ func handleShortcuts() {
 		case char == '1':
 			currentPage = HomePage()
 		case char == '2':
+			chat = nil
+			currentHistory = nil
 			currentPage = ChatPage(currentPage, core.DefaultModel())
 		case char == '3':
-			currentPage = ChatPage(currentPage, core.CodingLowModel())
-		case char == '4':
-			currentPage = ChatPage(currentPage, core.CodingHighModel())
-		case char == '5':
 			currentPage = UsagePage(currentPage)
-		case char == '6':
+		case char == '4':
 			currentPage = ConfigPage(currentPage)
-		case char == '7':
+		case char == '5':
 			currentPage = CreditPage(currentPage)
 		case key == keyboard.KeyEsc:
 			fmt.Println("Addio")
 			return
 		}
-
-		if key == keyboard.KeyEsc {
-			return
-		}
-
 	}
 }

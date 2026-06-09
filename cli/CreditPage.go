@@ -13,7 +13,7 @@ func CreditPage(page *Page) *Page {
 		"\\_| \\__,_|___/\\__|      \\_| |_/_|\n"+
 		"                                 \n"+
 		"                                 ",
-		"\nCrediti: https://github.com/AndreaMaruca08", true,
+		"\nCrediti: https://github.com/AndreaMaruca08", false,
 	)
 	currentPage = page
 	fmt.Print("\033[34m")

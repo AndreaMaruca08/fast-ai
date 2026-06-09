@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fast_ai_client/core"
 	"fmt"
 	"strings"
 )
@@ -9,7 +10,7 @@ const (
 	pageWidth    = 200
 	messageWidth = 120
 	messageLeftX = 2
-	messageTopY  = 15
+	messageTopY  = 20
 )
 
 type Page struct {
@@ -36,7 +37,7 @@ func (p *Page) AddMessage(msg string, user bool) {
 	}
 
 	lines := wrapText(msg, messageWidth)
-	var formatter Formatter
+	var formatter core.Formatter
 	for _, line := range lines {
 		moveCursor(&p.Body, x, p.NextRow)
 		if user {

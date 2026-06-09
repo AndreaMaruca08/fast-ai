@@ -3,8 +3,10 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	openrouter "github.com/OpenRouterTeam/go-sdk"
 	"github.com/OpenRouterTeam/go-sdk/models/components"
@@ -19,22 +21,100 @@ type Streamer interface {
 }
 
 type Model struct {
-	Name string
-	Type string
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 type Message struct {
 	Role    string
 	Content string
 }
 type Chat struct {
-	Model   Model
-	History []components.ChatMessages
+	Model   Model                     `json:"model"`
+	History []components.ChatMessages `json:"history"`
+}
+
+func (chat *Chat) String() string {
+	if chat == nil || len(chat.History) == 0 {
+		return ""
+	}
+
+	var builder strings.Builder
+
+	for _, message := range chat.History {
+		switch {
+		case message.ChatUserMessage != nil:
+			text := userMessageText(message.ChatUserMessage.Content)
+			if text == "" {
+				continue
+			}
+			builder.WriteString(WrapIn("Tu:\n", Blue))
+			builder.WriteString(text)
+			builder.WriteString("\n\n")
+
+		case message.ChatAssistantMessage != nil:
+			content, ok := message.ChatAssistantMessage.Content.GetOrZero()
+			if !ok {
+				continue
+			}
+
+			text := assistantMessageText(content)
+			if text == "" {
+				continue
+			}
+			builder.WriteString(WrapIn("AI:\n", Green))
+			builder.WriteString(FormatText(text))
+			builder.WriteString("\n\n")
+		}
+	}
+
+	return strings.TrimSpace(builder.String())
+}
+
+func userMessageText(content components.ChatUserMessageContent) string {
+	if content.Str != nil {
+		return *content.Str
+	}
+
+	return contentItemsText(content.ArrayOfChatContentItems)
+}
+
+func assistantMessageText(content components.ChatAssistantMessageContent) string {
+	if content.Str != nil {
+		return *content.Str
+	}
+
+	if content.ArrayOfChatContentItems != nil {
+		return contentItemsText(content.ArrayOfChatContentItems)
+	}
+
+	if content.Any != nil {
+		return fmt.Sprint(content.Any)
+	}
+
+	return ""
+}
+
+func contentItemsText(items []components.ChatContentItems) string {
+	var builder strings.Builder
+
+	for _, item := range items {
+		if item.ChatContentText == nil {
+			continue
+		}
+
+		if builder.Len() > 0 {
+			builder.WriteByte('\n')
+		}
+		builder.WriteString(item.ChatContentText.Text)
+	}
+
+	return builder.String()
 }
 
 const (
 	Normal   string = "openrouter/free"
-	CodeLow  string = "openai/gpt-oss-20b:free"
-	CodeHigh string = "openai/gpt-oss-120b:free"
+	CodeLow  string = "openai/gpt-oss-120b:free"
+	CodeHigh string = "openai/gpt-4o-mini-2024-07-18"
 )
 
 func (chat *Chat) CreateUserMessage(msg string) {
@@ -56,6 +136,38 @@ func (chat *Chat) SetSystemPrompt(prompt string) {
 
 	chat.History = append([]components.ChatMessages{message}, chat.History...)
 }
+
+func (chat *Chat) requestMessages(systemPrompt string) []components.ChatMessages {
+	systemMessage := components.CreateChatMessagesSystem(
+		components.ChatSystemMessage{
+			Role:    components.ChatSystemMessageRoleSystem,
+			Content: components.CreateChatSystemMessageContentStr(systemPrompt),
+		},
+	)
+
+	messages := make([]components.ChatMessages, 0, len(chat.History)+1)
+	messages = append(messages, systemMessage)
+	for _, message := range chat.History {
+		if message.ChatSystemMessage != nil {
+			continue
+		}
+		messages = append(messages, message)
+	}
+
+	return messages
+}
+
+func (chat *Chat) removeSystemMessages() {
+	history := chat.History[:0]
+	for _, message := range chat.History {
+		if message.ChatSystemMessage != nil {
+			continue
+		}
+		history = append(history, message)
+	}
+	chat.History = history
+}
+
 func (chat *Chat) CreateAssistantMessage(msg string) {
 	message := components.CreateChatMessagesAssistant(
 		components.ChatAssistantMessage{
@@ -103,14 +215,14 @@ func (chat *Chat) Send(streamer Streamer) (string, error) {
 		config = configs.CodeHigh
 	}
 
-	chat.SetSystemPrompt(config.PrePrompt)
+	chat.removeSystemMessages()
 
 	res, err := client.Chat.Send(ctx, components.ChatRequest{
 		Model:       openrouter.Pointer(model.Name),
 		Stream:      openrouter.Pointer(true),
 		MaxTokens:   optionalnullable.From(openrouter.Pointer[int64](int64(config.MaxTokens))),
 		Temperature: optionalnullable.From(openrouter.Pointer(config.Temperature)),
-		Messages:    chat.History,
+		Messages:    chat.requestMessages(config.PrePrompt),
 	})
 	if err != nil {
 		return "", errors.New("Errore durante la chiamata a OpenRouter: " + err.Error())
